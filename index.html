@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HỌC TOÁN VỚI THẦY SƠN TÙNG - KẺ THÔNG MINH VĨ ĐẠI SUPERGAME V5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-navy: #232b3e;
+            --color-clay: #c1791a;
+            --color-blue: #3b7dda;
+            --color-green: #27ae60;
+            --color-red: #e74c3c;
+            --color-yellow: #f1c40f;
+            --color-bg: #111625;
+            --color-card: #1c2333;
+            --color-text: #ffffff;
+            --color-chalkboard: #1b382b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Canvas Pháo Hoa */
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Container Chính */
+        .game-container {
+            width: 100%;
+            max-width: 980px;
+            min-height: 660px;
+            background: var(--color-navy);
+            border: 4px solid var(--color-clay);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .game-container.shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        .game-container.survival-mode {
+            border-color: var(--color-red);
+            box-shadow: 0 0 35px rgba(231, 76, 60, 0.8);
+            animation: pulse-border 1s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: var(--color-red); }
+            100% { border-color: #ff7675; }
+        }
+
+        /* Header Brand & Stats */
+        .header {
+            background: rgba(0, 0, 0, 0.35);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-name {
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            color: var(--color-yellow);
+            font-size: 1.15rem;
+        }
+
+        .btn-audio {
+            background: var(--color-blue);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        /* Màn hình chính */
+        .screen {
+            display: none;
+            padding: 20px 25px;
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .screen.active { display: flex; }
+
+        .game-title {
+            font-size: 2.2rem;
+            color: var(--color-yellow);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            text-shadow: 2px 3px 0 #000;
+        }
+
+        .rules-board {
+            background: var(--color-card);
+            border-radius: 15px;
+            padding: 16px;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 20px;
+            text-align: left;
+            border: 2px solid rgba(255,255,255,0.08);
+        }
+
+        .rules-title {
+            font-size: 1.1rem;
+            color: var(--color-clay);
+            margin-bottom: 10px;
+            font-weight: 900;
+        }
+
+        .rounds-list {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .round-card {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 10px;
+            border-left: 4px solid var(--color-blue);
+        }
+
+        .round-card.r5 { border-left-color: var(--color-red); }
+        .round-card h4 { font-size: 0.85rem; color: #fff; margin-bottom: 4px; font-weight: 900; }
+        .round-card p { font-size: 0.72rem; color: #a0aec0; line-height: 1.2; }
+
+        .btn-primary {
+            background: var(--color-green);
+            color: white;
+            font-size: 1.35rem;
+            font-weight: 900;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #1e824c;
+            transition: all 0.1s;
+        }
+
+        .btn-primary:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #1e824c;
+        }
+
+        .round-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .round-indicator {
+            font-size: 1rem;
+            font-weight: 900;
+            background: var(--color-blue);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .round-indicator.survival {
+            background: var(--color-red);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0.6; } }
+
+        /* Bảng Phấn */
+        .chalkboard-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            padding: 6px;
+            background: #4a3525;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            transition: all 0.3s;
+        }
+
+        .chalkboard-container.fire-combo {
+            box-shadow: 0 0 25px #f1c40f, 0 0 40px #e74c3c;
+            animation: flame-pulse 0.8s infinite alternate;
+        }
+
+        @keyframes flame-pulse {
+            0% { filter: drop-shadow(0 0 10px #f1c40f); }
+            100% { filter: drop-shadow(0 0 25px #e74c3c); }
+        }
+
+        .question-box {
+            background: var(--color-chalkboard);
+            width: 100%;
+            padding: 22px 25px;
+            border-radius: 10px;
+            font-family: 'Patrick Hand', 'Nunito', cursive;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.5;
+            color: #f5f6fa;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            border: 2px dashed rgba(255,255,255,0.2);
+            min-height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .option-btn {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            text-align: left;
+        }
+
+        .option-btn:hover {
+            background: var(--color-blue);
+            border-color: var(--color-blue);
+            transform: translateY(-2px);
+        }
+
+        .option-btn.disabled {
+            opacity: 0.2;
+            pointer-events: none;
+            text-decoration: line-through;
+        }
+
+        .option-prefix {
+            background: rgba(255,255,255,0.2);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 12px;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .lifelines-bar {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .btn-lifeline {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid var(--color-clay);
+            color: var(--color-yellow);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .btn-lifeline:hover:not(.used) {
+            background: var(--color-clay);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .btn-lifeline.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #7f8c8d;
+            color: #7f8c8d;
+        }
+
+        /* Mascot Avatar Cá Nhân PNG Thầy Sơn Tùng */
+        .mascot-container {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .mascot-speech {
+            background: white;
+            color: #232b3e;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            max-width: 200px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .mascot-speech::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            bottom: 12px;
+            border-width: 6px 0 6px 8px;
+            border-style: solid;
+            border-color: transparent transparent transparent white;
+        }
+
+        .mascot-avatar-wrapper {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid var(--color-yellow);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            overflow: hidden;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #1c2333;
+        }
+
+        .mascot-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Modal Vòng Quay */
+        .wheel-modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .wheel-modal.active { display: flex; }
+
+        .wheel-box {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            border: 8px solid var(--color-yellow);
+            overflow: hidden;
+            transition: transform 3s cubic-bezier(0.15, 0.99, 0.18, 1);
+            box-shadow: 0 0 30px var(--color-yellow);
+        }
+
+        .wheel-pointer {
+            width: 0; height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid var(--color-red);
+            position: absolute;
+            top: 18%;
+            z-index: 110;
+        }
+
+        .btn-spin {
+            margin-top: 20px;
+            background: var(--color-green);
+            color: white;
+            font-weight: 900;
+            font-size: 1.2rem;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        /* End Screen */
+        .end-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 880px;
+            text-align: left;
+        }
+
+        .end-card {
+            background: var(--color-card);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .end-title { font-size: 2rem; color: var(--color-yellow); margin-bottom: 5px; }
+        .final-score { font-size: 3.2rem; font-weight: 900; color: var(--color-green); margin: 5px 0; }
+        .rank-badge { font-size: 1rem; color: #fff; margin-bottom: 12px; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; display: inline-block; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
+        .name-input {
+            flex: 1; padding: 10px 15px; border-radius: 8px; border: 2px solid var(--color-blue);
+            background: rgba(0,0,0,0.3); color: white; font-weight: bold; outline: none;
+        }
+        .btn-save { background: var(--color-clay); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        .leaderboard-title { font-size: 1.1rem; font-weight: 900; color: var(--color-yellow); margin-bottom: 10px; }
+        .leaderboard-list { list-style: none; }
+        .leaderboard-item {
+            background: rgba(255,255,255,0.05); margin-bottom: 6px; padding: 8px 12px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.9rem;
+        }
+
+        @media (max-width: 820px) {
+            .rounds-list { grid-template-columns: repeat(2, 1fr); }
+            .options-grid { grid-template-columns: 1fr; }
+            .end-layout { grid-template-columns: 1fr; }
+            .mascot-container { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="confettiCanvas"></canvas>
+
+<div class="game-container" id="gameContainer">
+    <header class="header">
+        <div class="brand-logo">
+            <div class="brand-name">HỌC TOÁN VỚI THẦY SƠN TÙNG</div>
+        </div>
+        <div class="header-controls">
+            <div class="stat-box">🔥 <span class="stat-value" id="streakDisplay">0</span></div>
+            <div class="stat-box">⏱️ <span class="stat-value" id="totalTimer">10:00</span></div>
+            <div class="stat-box">⭐ <span class="stat-value" id="scoreDisplay">0</span></div>
+            <button class="btn-audio" id="audioToggle" onclick="toggleAudio()">🔊 Âm Thanh: BẬT</button>
+        </div>
+    </header>
+
+    <!-- Màn hình Bắt Đầu -->
+    <main class="screen active" id="startScreen">
+        <h1 class="game-title">KẺ THÔNG MINH VĨ ĐẠI</h1>
+        
+        <div class="rules-board">
+            <div class="rules-title">📋 LUẬT 5 VÒNG ĐẤU KỊCH TÍNH (Thời gian: 10:00)</div>
+            <div class="rounds-list">
+                <div class="round-card"><h4>Vòng 1 (2 Phút)</h4><p>Cơ bản (+10 điểm)</p></div>
+                <div class="round-card"><h4>Vòng 2 (2 Phút)</h4><p>Thử thách bẫy (+20 điểm)</p></div>
+                <div class="round-card"><h4>Vòng 3 (2 Phút)</h4><p>Tăng độ khó (+30/Sai -5)</p></div>
+                <div class="round-card"><h4>Vòng 4 (2 Phút)</h4><p>Tốc độ (+40/Sai -10)</p></div>
+                <div class="round-card r5"><h4>🚨 Vòng 5 (2 Phút)</h4><p>SINH TỒN (+50/Sai -20)</p></div>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="startGame()">BẮT ĐẦU CHƠI</button>
+    </main>
+
+    <!-- Màn hình Chơi Game -->
+    <main class="screen" id="gameScreen">
+        <div class="round-bar">
+            <div class="round-indicator" id="roundIndicator">VÒNG 1: CƠ BẢN</div>
+            <div class="stat-box" id="questionTimer" style="display: none; color: var(--color-yellow);">⏳ 30s</div>
+        </div>
+
+        <div class="chalkboard-container" id="chalkboardBox">
+            <div class="question-box" id="questionText">Đang chuẩn bị câu hỏi...</div>
+        </div>
+
+        <div class="options-grid" id="optionsGrid"></div>
+
+        <div class="lifelines-bar">
+            <button class="btn-lifeline" id="life5050" onclick="use5050()">🌓 50:50</button>
+            <button class="btn-lifeline" id="lifeFreeze" onclick="useFreeze()">❄️ Đóng Băng (15s)</button>
+            <button class="btn-lifeline" id="lifeHint" onclick="useHint()">💡 Gợi Ý Thầy Sơn Tùng</button>
+        </div>
+
+        <!-- Mascot Avatar Cá Nhân Thầy Sơn Tùng -->
+        <div class="mascot-container">
+            <div class="mascot-speech" id="mascotSpeech">Chào các con! Cùng chinh phục Toán tư duy nhé!</div>
+            <div class="mascot-avatar-wrapper">
+                <!-- Thầy thay link ảnh PNG tách nền cá nhân vào thuộc tính src dưới đây -->
+                <img id="mascotImg" class="mascot-img" src="thay-son-tung.png" alt="Thầy Sơn Tùng" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3429/3429433.png'">
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Vòng Quay -->
+    <div class="wheel-modal" id="wheelModal">
+        <h2 style="color: var(--color-yellow); margin-bottom: 10px;">🎉 STREAK X3: VÒNG QUAY MAY MẮN!</h2>
+        <div class="wheel-pointer"></div>
+        <div class="wheel-box" id="wheelBox">
+            <canvas id="wheelCanvas" width="260" height="260"></canvas>
+        </div>
+        <button class="btn-spin" id="btnSpin" onclick="spinWheel()">QUAY NGAY</button>
+    </div>
+
+    <!-- Màn hình Kết Thúc -->
+    <main class="screen" id="endScreen">
+        <div class="end-layout">
+            <div class="end-card">
+                <h2 class="end-title">🎉 HOÀN THÀNH!</h2>
+                <div class="final-score" id="finalScoreDisplay">0</div>
+                <div class="rank-badge" id="rankBadge">Danh hiệu: Đang tính...</div>
+                
+                <div class="input-group" id="saveSection">
+                    <input type="text" id="playerName" class="name-input" placeholder="Nhập tên học sinh..." maxlength="20">
+                    <button class="btn-save" onclick="saveScore()">LƯU TÊN</button>
+                </div>
+                
+                <button class="btn-primary" onclick="resetGame()" style="margin-top: 10px; width: 100%;">CHƠI LẠI</button>
+            </div>
+
+            <div class="end-card">
+                <div class="leaderboard-title">🏆 BẢNG XẾP HẠNG VINH DANH</div>
+                <ul class="leaderboard-list" id="leaderboardList"></ul>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+/* ==========================================================
+   CANVAS CONFETTI
+   ========================================================== */
+const canvas = document.getElementById('confettiCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let confettiAnimation = null;
+
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function launchConfetti() {
+    particles = [];
+    const colors = ['#f1c40f', '#e74c3c', '#3b7dda', '#27ae60', '#e67e22'];
+    for (let i = 0; i < 150; i++) {
+        particles.push({
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
+            size: Math.random() * 8 + 4, color: colors[Math.floor(Math.random() * colors.length)],
+            vy: Math.random() * 5 + 3, vx: Math.random() * 2 - 1
+        });
+    }
+    animateConfetti();
+}
+
+function animateConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p) => { p.y += p.vy; p.x += p.vx; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); });
+    particles = particles.filter(p => p.y < canvas.height);
+    if (particles.length > 0) confettiAnimation = requestAnimationFrame(animateConfetti);
+}
+
+function stopConfetti() { if (confettiAnimation) cancelAnimationFrame(confettiAnimation); ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+/* ==========================================================
+   WEB AUDIO API SYSTEM
+   ========================================================== */
+class SoundEngine {
+    constructor() {
+        this.ctx = null; this.muted = false; this.bgmTimer = null; this.bgmStep = 0; this.bpm = 110;
+    }
+
+    init() {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+    }
+
+    playCorrect() {
+        if (this.muted) return; this.init();
+        const now = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.25);
+    }
+
+    playWrong() {
+        if (this.muted) return; this.init();
+        const now = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, now); osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.3);
+    }
+
+    playTick() {
+        if (this.muted) return; this.init();
+        const now = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(750, now); gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.04);
+    }
+
+    startBGM() { if (this.bgmTimer) clearInterval(this.bgmTimer); this.bgmStep = 0; this.runBGMLoop(); }
+    setBGMTempo(bpm) { this.bpm = bpm; if (this.bgmTimer) { clearInterval(this.bgmTimer); this.runBGMLoop(); } }
+    stopBGM() { if (this.bgmTimer) clearInterval(this.bgmTimer); this.bgmTimer = null; }
+
+    runBGMLoop() {
+        const interval = (60 / this.bpm) * 1000 / 2;
+        const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23]; 
+        this.bgmTimer = setInterval(() => {
+            if (!this.muted) {
+                this.init(); const now = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'square'; osc.frequency.setValueAtTime(melody[this.bgmStep % melody.length], now);
+                gain.gain.setValueAtTime(0.03, now); gain.gain.exponentialRampToValueAtTime(0.001, now + (interval/1000) * 0.8);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + (interval/1000) * 0.8);
+                this.bgmStep++;
+            }
+        }, interval);
+    }
+}
+
+const sounds = new SoundEngine();
+function toggleAudio() {
+    sounds.muted = !sounds.muted;
+    document.getElementById('audioToggle').innerText = sounds.muted ? '🔇 Âm Thanh: TẮT' : '🔊 Âm Thanh: BẬT';
+}
+
+/* ==========================================================
+   SUPERGAME DATABASE - NGÂN HÀNG CÂU HỎI MỞ RỘNG
+   ========================================================== */
+const questionBank = {
+    round1: [
+        { q: "Tìm số tiếp theo trong dãy số: 2, 4, 6, 8, ...", options: ["10", "9", "12", "11"], answer: "10", hint: "Dãy số cách đều 2 đơn vị đấy các con!" },
+        { q: "Trong các số sau, số nào là số lẻ?", options: ["124", "357", "468", "802"], answer: "357", hint: "Số lẻ có chữ số tận cùng là 1, 3, 5, 7, 9." },
+        { q: "Tìm số tiếp theo trong dãy: 5, 10, 15, 20, ...", options: ["25", "30", "22", "24"], answer: "25", hint: "Mỗi số sau hơn số trước 5 đơn vị." },
+        { q: "Số lớn nhất có 3 chữ số khác nhau từ {1, 5, 8}:", options: ["851", "815", "581", "158"], answer: "851", hint: "Hãy xếp chữ số lớn nhất ở hàng trăm!" },
+        { q: "Số chẵn nhỏ nhất có 3 chữ số khác nhau:", options: ["102", "100", "120", "104"], answer: "102", hint: "Chữ số hàng trăm là 1, chục là 0, đơn vị là 2." },
+        { q: "Số bé nhất có 3 chữ số chia hết cho 5 là:", options: ["100", "105", "110", "102"], answer: "100", hint: "Số có tận cùng bằng 0 hoặc 5 chia hết cho 5." },
+        { q: "Dãy số 1, 3, 5, 7, 9, ... có số hạng tiếp theo là:", options: ["11", "10", "12", "13"], answer: "11", hint: "Đây là dãy các số lẻ liên tiếp!" },
+        { q: "Số 504 là số chẵn hay số lẻ?", options: ["Số chẵn", "Số lẻ", "Không xác định", "Cả hai"], answer: "Số chẵn", hint: "Chữ số tận cùng là 4 nên là số chẵn." },
+        { q: "Kết quả phép chia 19 : 4 có số dư là bao nhiêu?", options: ["3", "1", "2", "0"], answer: "3", hint: "19 = 4 x 4 + 3 nên dư 3." },
+        { q: "Số gồm 8 trăm, 2 chục và 0 đơn vị viết là:", options: ["820", "802", "280", "82"], answer: "820", hint: "Chữ số hàng trăm là 8, chục là 2, đơn vị là 0." }
+    ],
+    round2: [
+        { q: "Chữ số tận cùng của tổng: 12 + 25 + 34 + 41 là:", options: ["2", "1", "3", "4"], answer: "2", hint: "Chỉ cần cộng các chữ số tận cùng: 2 + 5 + 4 + 1 = 12." },
+        { q: "Hộp có 3 bi đỏ, 4 bi xanh. Cần lấy ít nhất bao nhiêu viên để chắc chắn có 1 bi xanh?", options: ["4 viên", "3 viên", "5 viên", "7 viên"], answer: "4 viên", hint: "Trường hợp xui nhất là lấy hết 3 bi đỏ, lấy thêm 1 viên nữa sẽ chắc chắn ra bi xanh!" },
+        { q: "Viết số lớn nhất có 4 chữ số khác nhau từ {0, 2, 9, 5}:", options: ["9520", "9502", "9250", "9205"], answer: "9520", hint: "Xếp giảm dần từ trái sang phải nhé!" },
+        { q: "Số nhỏ nhất có 4 chữ số khác nhau từ {3, 0, 8, 1}:", options: ["1038", "0138", "1308", "1083"], answer: "1038", hint: "Chữ số hàng nghìn không thể bằng 0." },
+        { q: "Trong túi có 6 bi đen và 4 bi trắng. Lấy ít nhất bao nhiêu viên để có chắc chắn 2 bi cùng màu?", options: ["3 viên", "2 viên", "5 viên", "7 viên"], answer: "3 viên", hint: "Có 2 loại màu, lấy 3 viên chắc chắn sẽ có ít nhất 2 viên cùng màu." },
+        { q: "Tìm số dư lớn nhất trong phép chia cho 7:", options: ["6", "7", "5", "1"], answer: "6", hint: "Số dư lớn nhất luôn nhỏ hơn số chia 1 đơn vị." },
+        { q: "Chữ số tận cùng của tích: 2 x 4 x 6 x 8 x 5 là:", options: ["0", "2", "4", "8"], answer: "0", hint: "Tích có chứa chữ số 5 nhân với số chẵn luôn tận cùng là 0." },
+        { q: "Tổng của 5 số lẻ liên tiếp là số chẵn hay số lẻ?", options: ["Số lẻ", "Số chẵn", "Không đoán được", "Bằng 0"], answer: "Số lẻ", hint: "Cộng 5 số lẻ lại sẽ cho kết quả là một số lẻ." }
+    ],
+    round3: [
+        { q: "Chữ số tận cùng của tích: 3 x 5 x 7 x 9 là:", options: ["5", "0", "9", "1"], answer: "5", hint: "Số lẻ nhân với 5 luôn có tận cùng là 5!" },
+        { q: "Một phép chia cho 6 có số dư lớn nhất có thể. Số dư đó là:", options: ["5", "6", "4", "1"], answer: "5", hint: "Số dư luôn nhỏ hơn số chia 1 đơn vị." },
+        { q: "Trong hộp có 5 quả cam và 3 quả táo. Lấy ít nhất mấy quả để chắc chắn có 1 quả cam?", options: ["4 quả", "3 quả", "5 quả", "6 quả"], answer: "4 quả", hint: "Xui nhất lấy hết 3 quả táo, cần lấy thêm 1 quả nữa." },
+        { q: "Một phép chia có số chia 5, thương 12, số dư 3. Số bị chia là:", options: ["63", "60", "65", "57"], answer: "63", hint: "Số bị chia = Thương x Số chia + Số dư = 12 x 5 + 3." },
+        { q: "Cho dãy số: 2, 5, 8, 11, ... Số thứ 8 của dãy là:", options: ["23", "20", "26", "29"], answer: "23", hint: "Số thứ 8 = 2 + 7 x 3 = 23." },
+        { q: "Số nhỏ nhất có 3 chữ số chia cho 5 dư 2 là:", options: ["102", "100", "107", "105"], answer: "102", hint: "100 chia hết cho 5, thêm 2 đơn vị thành 102." }
+    ],
+    round4: [
+        { q: "⚡ TÍNH NHANH: 15 + 27 + 85 + 73 = ?", options: ["200", "190", "210", "180"], answer: "200", hint: "Gộp (15 + 85) và (27 + 73) để tròn trăm nhé!" },
+        { q: "⚡ TÍNH NHANH: 4 x 18 x 25 = ?", options: ["1800", "180", "900", "3600"], answer: "1800", hint: "Nhân 4 với 25 trước ra 100 nè!" },
+        { q: "⚡ TÍNH NHANH: 123 + 456 - 23 - 56 = ?", options: ["500", "400", "550", "600"], answer: "500", hint: "Gộp (123 - 23) và (456 - 56) nhé!" },
+        { q: "⚡ TỐC ĐỘ: Tích của (0 x 1 x 2 x ... x 99) bằng:", options: ["0", "99", "100", "990"], answer: "0", hint: "Bất kỳ số nào nhân với 0 cũng bằng 0!" },
+        { q: "⚡ TÍNH NHANH: 99 + 99 + 99 + 99 = ?", options: ["396", "400", "390", "398"], answer: "396", hint: "Lấy 100 x 4 - 4 = 396." },
+        { q: "⚡ TÍNH NHANH: 136 x 8 - 36 x 8 = ?", options: ["800", "80", "1000", "600"], answer: "800", hint: "Rút 8 ra ngoài: (136 - 36) x 8 = 100 x 8." }
+    ],
+    round5: [
+        { q: "🚨 SINH TỒN: Hộp có 10 bi đỏ, 8 xanh, 6 vàng. Lấy ít nhất bao nhiêu viên để chắc chắn có 1 bi đỏ?", options: ["15 viên", "14 viên", "11 viên", "19 viên"], answer: "15 viên", hint: "Trường hợp xấu nhất: Lấy hết 8 xanh + 6 vàng = 14 viên. Thêm 1 viên là xong!" },
+        { q: "🚨 SINH TỒN: Tìm chữ số tận cùng của tích: 1 x 3 x 5 x ... x 2025?", options: ["5", "0", "1", "9"], answer: "5", hint: "Tích các số lẻ có chứa số 5 luôn tận cùng là 5." },
+        { q: "🚨 CỰC KHÓ: Hộp có 5 đôi găng tay đen khác loại. Trong bóng tối, lấy ít nhất bao nhiêu chiếc để chắc chắn có 1 đôi hợp nhau?", options: ["6 chiếc", "5 chiếc", "2 chiếc", "7 chiếc"], answer: "6 chiếc", hint: "Trường hợp xấu nhất là lấy 5 chiếc toàn tay trái, thêm 1 chiếc nữa là có 1 đôi!" },
+        { q: "🚨 BẪY BÁO ĐỘNG: Lấy ít nhất bao nhiêu thẻ từ 1 đến 10 để chắc chắn có 2 thẻ có tổng bằng 11?", options: ["6 thẻ", "5 thẻ", "7 thẻ", "8 thẻ"], answer: "6 thẻ", hint: "Có 5 cặp tổng bằng 11. Theo nguyên lý Dirichlet, lấy 6 thẻ chắc chắn có 1 cặp." },
+        { q: "🚨 SINH TỒN: Cho dãy số: 1, 2, 4, 7, 11, 16, ... Số tiếp theo là:", options: ["22", "21", "23", "20"], answer: "22", hint: "Khoảng cách tăng dần: +1, +2, +3, +4, +5 -> Tiếp theo là +6." }
+    ]
+};
+
+/* ==========================================================
+   GAME ENGINE & STATE
+   ========================================================== */
+let currentRound = 1;
+let totalSeconds = 600;
+let questionTimerSeconds = 30;
+let score = 0;
+let streak = 0;
+let isDoubleScore = false;
+let isFrozen = false;
+
+let totalTimerInterval = null;
+let questionTimerInterval = null;
+
+let currentQuestionList = [];
+let currentQuestionIndex = 0;
+
+let usedLifelines = { fFifty: false, fFreeze: false, fHint: false };
+
+function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    return arr;
+}
+
+function startGame() {
+    score = 0; streak = 0; currentRound = 1; totalSeconds = 600;
+    usedLifelines = { fFifty: false, fFreeze: false, fHint: false };
+    document.querySelectorAll('.btn-lifeline').forEach(b => b.classList.remove('used'));
+    
+    document.getElementById('scoreDisplay').innerText = score;
+    document.getElementById('streakDisplay').innerText = streak;
+    stopConfetti();
+    
+    document.getElementById('startScreen').classList.remove('active');
+    document.getElementById('gameScreen').classList.add('active');
+
+    sounds.startBGM(); sounds.setBGMTempo(110);
+    clearInterval(totalTimerInterval); totalTimerInterval = setInterval(updateTotalTimer, 1000);
+
+    loadRound(1);
+}
+
+function updateTotalTimer() {
+    totalSeconds--;
+    const mins = Math.floor(totalSeconds / 60); const secs = totalSeconds % 60;
+    document.getElementById('totalTimer').innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+    if (totalSeconds === 480 && currentRound === 1) loadRound(2);
+    else if (totalSeconds === 360 && currentRound === 2) loadRound(3);
+    else if (totalSeconds === 240 && currentRound === 3) loadRound(4);
+    else if (totalSeconds === 120 && currentRound === 4) loadRound(5);
+
+    if (totalSeconds <= 0) endGame();
+}
+
+function loadRound(roundNum) {
+    currentRound = roundNum;
+    const container = document.getElementById('gameContainer');
+    const roundIndicator = document.getElementById('roundIndicator');
+    const qTimerBadge = document.getElementById('questionTimer');
+
+    container.classList.remove('survival-mode');
+    roundIndicator.classList.remove('survival');
+    qTimerBadge.style.display = 'none';
+    clearInterval(questionTimerInterval);
+
+    let roundName = ""; let rawQuestions = [];
+    if (roundNum === 1) { roundName = "VÒNG 1: CƠ BẢN (+10 ĐIỂM)"; rawQuestions = questionBank.round1; sounds.setBGMTempo(110); }
+    else if (roundNum === 2) { roundName = "VÒNG 2: THỬ THÁCH BẪY (+20 ĐIỂM)"; rawQuestions = questionBank.round2; sounds.setBGMTempo(125); }
+    else if (roundNum === 3) { roundName = "VÒNG 3: TĂNG ĐỘ KHÓ (+30/SAI -5)"; rawQuestions = questionBank.round3; sounds.setBGMTempo(140); }
+    else if (roundNum === 4) { roundName = "VÒNG 4: TÍNH NHANH TỐC ĐỘ (+40/SAI -10)"; rawQuestions = questionBank.round4; sounds.setBGMTempo(155); }
+    else if (roundNum === 5) {
+        roundName = "🚨 VÒNG 5: SINH TỒN (+50/SAI -20)"; rawQuestions = questionBank.round5;
+        container.classList.add('survival-mode'); roundIndicator.classList.add('survival');
+        qTimerBadge.style.display = 'block'; sounds.setBGMTempo(180);
+    }
+
+    roundIndicator.innerText = roundName;
+    currentQuestionList = shuffleArray(rawQuestions); currentQuestionIndex = 0;
+    renderQuestion();
+}
+
+function renderQuestion() {
+    if (currentQuestionIndex >= currentQuestionList.length) {
+        currentQuestionList = shuffleArray(currentQuestionList); currentQuestionIndex = 0;
+    }
+
+    const q = currentQuestionList[currentQuestionIndex];
+    document.getElementById('questionText').innerText = q.q;
+
+    const shuffledOptions = shuffleArray(q.options);
+    const optionsGrid = document.getElementById('optionsGrid');
+    optionsGrid.innerHTML = '';
+
+    const prefixes = ['A', 'B', 'C', 'D'];
+    shuffledOptions.forEach((optText, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<span class="option-prefix">${prefixes[index]}</span> ${optText}`;
+        btn.onclick = () => checkAnswer(optText, q.answer);
+        optionsGrid.appendChild(btn);
+    });
+
+    if (currentRound === 5) startQuestionTimer();
+}
+
+function startQuestionTimer() {
+    clearInterval(questionTimerInterval);
+    questionTimerSeconds = 30;
+    document.getElementById('questionTimer').innerText = `⏳ ${questionTimerSeconds}s`;
+
+    questionTimerInterval = setInterval(() => {
+        if (!isFrozen) {
+            questionTimerSeconds--;
+            document.getElementById('questionTimer').innerText = `⏳ ${questionTimerSeconds}s`;
+            if (questionTimerSeconds <= 5) sounds.playTick();
+
+            if (questionTimerSeconds <= 0) {
+                clearInterval(questionTimerInterval);
+                sounds.playWrong();
+                handleWrongAnswer();
+            }
+        }
+    }, 1000);
+}
+
+function checkAnswer(selectedOpt, correctOpt) {
+    clearInterval(questionTimerInterval);
+
+    if (selectedOpt === correctOpt) {
+        sounds.playCorrect();
+        streak++;
+        document.getElementById('streakDisplay').innerText = streak;
+
+        const board = document.getElementById('chalkboardBox');
+        if (streak >= 3) board.classList.add('fire-combo');
+
+        let basePoints = currentRound === 1 ? 10 : currentRound === 2 ? 20 : currentRound === 3 ? 30 : currentRound === 4 ? 40 : 50;
+        if (isDoubleScore) { basePoints *= 2; isDoubleScore = false; }
+        score += basePoints;
+
+        showMascot("Chính xác rồi! Con giỏi quá! 🎉");
+
+        if (streak === 3) {
+            setTimeout(openWheel, 500);
+        } else {
+            nextQuestion();
+        }
+    } else {
+        sounds.playWrong();
+        handleWrongAnswer();
+    }
+
+    document.getElementById('scoreDisplay').innerText = score;
+}
+
+function handleWrongAnswer() {
+    streak = 0;
+    document.getElementById('streakDisplay').innerText = streak;
+    document.getElementById('chalkboardBox').classList.remove('fire-combo');
+
+    const container = document.getElementById('gameContainer');
+    container.classList.add('shake');
+    setTimeout(() => container.classList.remove('shake'), 400);
+
+    if (currentRound === 3) score = Math.max(0, score - 5);
+    else if (currentRound === 4) score = Math.max(0, score - 10);
+    else if (currentRound === 5) score = Math.max(0, score - 20);
+
+    showMascot("Cố gắng lên con nhé, không sao đâu! 💪");
+    setTimeout(nextQuestion, 1000);
+}
+
+function nextQuestion() {
+    currentQuestionIndex++;
+    renderQuestion();
+}
+
+function showMascot(text) {
+    const speech = document.getElementById('mascotSpeech');
+    speech.innerText = text; speech.style.display = 'block';
+    setTimeout(() => { speech.style.display = 'none'; }, 3000);
+}
+
+function use5050() {
+    if (usedLifelines.fFifty) return;
+    usedLifelines.fFifty = true;
+    document.getElementById('life5050').classList.add('used');
+
+    const q = currentQuestionList[currentQuestionIndex];
+    const btns = Array.from(document.querySelectorAll('.option-btn'));
+    let removed = 0;
+    btns.forEach(btn => {
+        if (!btn.innerText.includes(q.answer) && removed < 2) {
+            btn.classList.add('disabled');
+            removed++;
+        }
+    });
+    showMascot("Thầy đã loại giúp con 2 đáp án sai rồi đó!");
+}
+
+function useFreeze() {
+    if (usedLifelines.fFreeze) return;
+    usedLifelines.fFreeze = true;
+    document.getElementById('lifeFreeze').classList.add('used');
+    isFrozen = true;
+    showMascot("Thời gian đã bị đóng băng 15 giây! ❄️");
+    setTimeout(() => { isFrozen = false; }, 15000);
+}
+
+function useHint() {
+    if (usedLifelines.fHint) return;
+    usedLifelines.fHint = true;
+    document.getElementById('lifeHint').classList.add('used');
+    const q = currentQuestionList[currentQuestionIndex];
+    showMascot(q.hint || "Hãy đọc kỹ đề bài nhé con!");
+}
+
+/* ==========================================================
+   VÒNG QUAY MAY MẮN
+   ========================================================== */
+const wheelCanvas = document.getElementById('wheelCanvas');
+const wCtx = wheelCanvas.getContext('2d');
+const prizes = ["+50 Điểm", "x2 Đôi", "+100 Điểm", "Thêm 15s", "+10 Điểm", "May Mắn"];
+const colors = ["#f1c40f", "#e74c3c", "#3b7dda", "#27ae60", "#e67e22", "#9b59b6"];
+
+function drawWheel() {
+    const numPrizes = prizes.length;
+    const arc = (2 * Math.PI) / numPrizes;
+    for (let i = 0; i < numPrizes; i++) {
+        wCtx.beginPath(); wCtx.fillStyle = colors[i];
+        wCtx.moveTo(130, 130); wCtx.arc(130, 130, 130, i * arc, (i + 1) * arc); wCtx.fill();
+        wCtx.save(); wCtx.translate(130, 130); wCtx.rotate(i * arc + arc / 2);
+        wCtx.fillStyle = "white"; wCtx.font = "bold 14px Nunito"; wCtx.fillText(prizes[i], 40, 5);
+        wCtx.restore();
+    }
+}
+drawWheel();
+
+function openWheel() { document.getElementById('wheelModal').classList.add('active'); }
+
+function spinWheel() {
+    const btn = document.getElementById('btnSpin'); btn.disabled = true;
+    const wheelBox = document.getElementById('wheelBox');
+    const randomDeg = Math.floor(1800 + Math.random() * 360);
+    wheelBox.style.transform = `rotate(${randomDeg}deg)`;
+
+    setTimeout(() => {
+        document.getElementById('wheelModal').classList.remove('active');
+        btn.disabled = false; wheelBox.style.transform = 'rotate(0deg)';
+        
+        score += 50; document.getElementById('scoreDisplay').innerText = score;
+        showMascot("Chúc mừng con nhận được quà từ Vòng Quay! 🎁");
+        nextQuestion();
+    }, 3200);
+}
+
+/* ==========================================================
+   END GAME & LEADERBOARD
+   ========================================================== */
+function endGame() {
+    clearInterval(totalTimerInterval); clearInterval(questionTimerInterval); sounds.stopBGM();
+    document.getElementById('gameScreen').classList.remove('active');
+    document.getElementById('endScreen').classList.add('active');
+    document.getElementById('finalScoreDisplay').innerText = score;
+    launchConfetti();
+
+    const rankBadge = document.getElementById('rankBadge');
+    if (score >= 700) { rankBadge.innerText = "🏆 KHỦNG LONG TOÁN HỌC: KẺ THÔNG MINH VĨ ĐẠI"; rankBadge.style.color = "#27ae60"; }
+    else if (score >= 450) { rankBadge.innerText = "🌟 DANH HIỆU: KỲ THỦ TƯ DUY SIÊU CẤP"; rankBadge.style.color = "#f1c40f"; }
+    else { rankBadge.innerText = "💪 DANH HIỆU: CHIẾN BINH MATH ĐANG TRƯỞNG THÀNH"; rankBadge.style.color = "#3b7dda"; }
+
+    document.getElementById('saveSection').style.display = 'flex';
+    renderLeaderboard();
+}
+
+function getScores() { return JSON.parse(localStorage.getItem('math_scores_v5') || '[]'); }
+
+function saveScore() {
+    const input = document.getElementById('playerName');
+    const name = input.value.trim() || 'Học sinh ẩn danh';
+    let scores = getScores(); scores.push({ name: name, score: score });
+    scores.sort((a, b) => b.score - a.score); scores = scores.slice(0, 5);
+    localStorage.setItem('math_scores_v5', JSON.stringify(scores));
+    document.getElementById('saveSection').style.display = 'none';
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    const list = document.getElementById('leaderboardList');
+    const scores = getScores(); list.innerHTML = '';
+    if (scores.length === 0) { list.innerHTML = '<li style="color:#a0aec0;">Chưa có kỷ lục nào. Hãy là người đầu tiên!</li>'; return; }
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    scores.forEach((item, index) => {
+        const li = document.createElement('li'); li.className = 'leaderboard-item';
+        li.innerHTML = `<span>${medals[index]} ${item.name}</span><span style="color:var(--color-yellow);">${item.score} đ</span>`;
+        list.appendChild(li);
+    });
+}
+
+function resetGame() {
+    stopConfetti();
+    document.getElementById('endScreen').classList.remove('active');
+    document.getElementById('startScreen').classList.add('active');
+}
+</script>
+</body>
+</html>
