@@ -98,11 +98,23 @@
         }
 
         .brand-name {
-            font-weight: 900;
-            font-size: 1.2rem;
-            color: #fff;
-            text-transform: uppercase;
-        }
+    font-weight: 900;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    /* Hiệu ứng bảy sắc cầu vồng chuyển động & phát sáng */
+    background: linear-gradient(90deg, #f1c40f, #e74c3c, #2ecc71, #3498db, #f1c40f);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbowGlow 4s linear infinite;
+    text-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+}
+
+@keyframes rainbowGlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}
 
         .header-controls {
             display: flex;
